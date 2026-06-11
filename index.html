@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="EduHubBengal — Premium JEE preparation platform. Guided by logic, driven by nature." />
+  <title>EduHubBengal — Mastering JEE, Guided by Logic</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest:  '#0d110d',
+            stone:   '#e8e2d9',
+            moss:    '#6b7c5e',
+            gold:    '#a89060',
+            olive:   '#1a2118',
+            bark:    '#2e3829',
+          },
+          fontFamily: {
+            serif: ['Merriweather', 'Georgia', 'serif'],
+            sans:  ['Poppins', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      background-color: #0d110d;
+      color: #e8e2d9;
+      font-family: 'Poppins', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Custom cursor removed — optimised for touch/mobile */
+
+    /* ─── Navbar ───────────────────────────────────────────── */
+    #navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      transition: background 0.4s, backdrop-filter 0.4s, box-shadow 0.4s;
+    }
+    #navbar.scrolled {
+      background: rgba(13,17,13,0.82);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      box-shadow: 0 1px 0 rgba(107,124,94,0.15);
+    }
+
+    /* ─── Hero Section ─────────────────────────────────────── */
+    #hero {
+      position: relative;
+      height: 600vh; /* tall enough for all 105 frames */
+    }
+    #hero-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Canvas sits behind the text */
+    #hero-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    /* Dark vignette over the canvas so text pops */
+    #hero-sticky::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(13,17,13,0.55) 100%),
+        linear-gradient(to bottom, rgba(13,17,13,0.5) 0%, transparent 25%, transparent 70%, rgba(13,17,13,0.9) 100%);
+      pointer-events: none;
+    }
+
+    /* Hero text layer – parallax driven by JS */
+    #hero-text-layer {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 0 1.5rem;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    /* ─── Scroll-reveal ────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(42px);
+      transition: opacity 0.85s cubic-bezier(0.25,1,0.5,1),
+                  transform 0.85s cubic-bezier(0.25,1,0.5,1);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.32s; }
+
+    /* ─── Card expansion ──────────────────────────────────── */
+    .subject-card {
+      cursor: none;
+      transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1),
+                  box-shadow 0.5s ease;
+    }
+    .subject-card:hover {
+      transform: translateY(-10px) scale(1.025);
+      box-shadow: 0 28px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(107,124,94,0.25);
+    }
+    .card-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.6s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease;
+      opacity: 0;
+    }
+    .subject-card.expanded .card-body {
+      max-height: 300px;
+      opacity: 1;
+    }
+
+    /* ─── Misc ─────────────────────────────────────────────── */
+    ::selection { background: rgba(168,144,96,0.3); }
+    .nav-link {
+      position: relative;
+      letter-spacing: 0.04em;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      left: 0; bottom: -2px;
+      width: 0; height: 1px;
+      background: #a89060;
+      transition: width 0.3s ease;
+    }
+    .nav-link:hover::after { width: 100%; }
+
+    /* Hamburger for mobile */
+    #mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: none;
+      padding: 4px;
+    }
+    #mobile-menu span {
+      display: block;
+      width: 24px; height: 1.5px;
+      background: #e8e2d9;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    #mobile-menu.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    #mobile-menu.open span:nth-child(2) { opacity: 0; }
+    #mobile-menu.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    @media (max-width: 768px) {
+      #desktop-nav { display: none; }
+      #mobile-menu { display: flex; }
+      #hero { height: 450vh; }
+    }
+  </style>
+</head>
+<body>
+
+
+
+  <!-- ═══════════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════════════ -->
+  <nav id="navbar" aria-label="Main navigation">
+    <div class="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16 md:h-20">
+
+      <!-- Wordmark -->
+      <a href="/" class="flex items-center gap-2 group" aria-label="EduHubBengal Home">
+        <span class="block w-2 h-2 rounded-full bg-gold group-hover:scale-125 transition-transform duration-300"></span>
+        <span class="font-serif text-stone text-lg md:text-xl tracking-wide font-bold">EduHubBengal</span>
+      </a>
+
+      <!-- Desktop nav -->
+      <ul id="desktop-nav" class="flex items-center gap-10 list-none">
+        <li><a href="/"          class="nav-link font-sans text-sm text-stone/70 hover:text-stone transition-colors duration-200">Home</a></li>
+        <li><a href="material/" class="nav-link font-sans text-sm text-stone/70 hover:text-stone transition-colors duration-200">Study Portal</a></li>
+        <li><a href="contact/"  class="nav-link font-sans text-sm text-stone/70 hover:text-stone transition-colors duration-200">Contact</a></li>
+        <li>
+          <a href="contact/" class="font-sans text-xs font-medium tracking-widest uppercase px-5 py-2.5 border border-gold/60 text-gold hover:bg-gold hover:text-forest transition-all duration-300 rounded-sm">
+            Enroll Now
+          </a>
+        </li>
+      </ul>
+
+      <!-- Hamburger -->
+      <button id="mobile-menu" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <!-- Mobile drawer -->
+    <div id="mobile-drawer"
+         class="hidden md:hidden bg-forest/95 backdrop-blur-xl border-t border-bark px-6 pb-8 pt-4 flex flex-col gap-5">
+      <a href="/"          class="font-sans text-stone/80 hover:text-stone text-base py-2 border-b border-bark/50">Home</a>
+      <a href="material/" class="font-sans text-stone/80 hover:text-stone text-base py-2 border-b border-bark/50">Study Portal</a>
+      <a href="contact/"  class="font-sans text-stone/80 hover:text-stone text-base py-2 border-b border-bark/50">Contact</a>
+      <a href="contact/"  class="mt-2 font-sans text-xs font-medium tracking-widest uppercase px-5 py-3 text-center border border-gold/60 text-gold hover:bg-gold hover:text-forest transition-all duration-300">
+        Enroll Now
+      </a>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════
+       HERO SECTION  (scroll animation canvas + text)
+  ═══════════════════════════════════════════ -->
+  <section id="hero" aria-label="Hero">
+    <div id="hero-sticky">
+
+      <!-- The scrolling frame animation fills the hero background -->
+      <canvas id="hero-canvas" aria-hidden="true"></canvas>
+
+      <!-- Preloader bar -->
+      <div id="preloader"
+           class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-forest">
+        <p class="font-serif text-stone/50 text-sm tracking-widest uppercase mb-4">Loading</p>
+        <div class="w-40 h-px bg-bark overflow-hidden rounded-full">
+          <div id="preloader-bar" class="h-full bg-gold transition-all duration-100" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Text + CTA – parallax moves with mouse -->
+      <div id="hero-text-layer" class="px-4 md:px-0 max-w-4xl mx-auto">
+        <p class="font-sans text-xs md:text-sm tracking-[0.25em] uppercase text-gold/80 mb-6 md:mb-8">
+          Premium JEE Preparation
+        </p>
+        <h1 class="font-serif font-black text-stone leading-[1.08] text-4xl sm:text-5xl md:text-7xl lg:text-[86px] mb-6 md:mb-8">
+          Mastering JEE,<br />
+          <em class="not-italic text-stone/60">Guided by Logic.</em>
+        </h1>
+        <p class="font-sans font-light text-stone/55 text-sm md:text-base max-w-md mx-auto leading-relaxed mb-10 md:mb-12">
+          Curated study materials, expert-designed problem sets, and a calm environment built for deep focus.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 items-center justify-center">
+          <a href="material/"
+             class="font-sans text-xs font-medium tracking-widest uppercase px-8 py-4 bg-gold text-forest hover:bg-stone transition-all duration-300 rounded-sm w-full sm:w-auto text-center">
+            Explore Materials
+          </a>
+          <a href="contact/"
+             class="font-sans text-xs font-medium tracking-widest uppercase px-8 py-4 border border-stone/20 text-stone/60 hover:border-stone/50 hover:text-stone transition-all duration-300 rounded-sm w-full sm:w-auto text-center">
+            Get Admitted
+          </a>
+        </div>
+      </div>
+
+      <!-- Scroll hint – fades out after scrolling begins -->
+      <div id="scroll-hint"
+           class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 transition-opacity duration-500">
+        <span class="font-sans text-[10px] tracking-[0.2em] uppercase text-stone/30">Scroll</span>
+        <div class="w-px h-10 bg-stone/20 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-full bg-gold animate-[scrollline_1.8s_ease-in-out_infinite]"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       ABOUT STRIP
+  ═══════════════════════════════════════════ -->
+  <section class="py-28 md:py-40 px-6 md:px-12 max-w-7xl mx-auto">
+    <div class="grid md:grid-cols-2 gap-16 md:gap-24 items-center">
+      <div>
+        <p class="reveal font-sans text-xs tracking-[0.25em] uppercase text-gold/70 mb-5">Our Philosophy</p>
+        <h2 class="reveal reveal-delay-1 font-serif font-bold text-stone text-3xl md:text-5xl leading-[1.15] mb-8">
+          Where nature's patience meets scientific rigour.
+        </h2>
+      </div>
+      <div>
+        <p class="reveal reveal-delay-2 font-sans font-light text-stone/55 text-base md:text-lg leading-relaxed mb-6">
+          EduHubBengal was born from the belief that the best learning environments mirror nature — unhurried, systematic, and deeply interconnected. Every resource is handcrafted by educators who understand not just the syllabus, but the <em>way students think</em>.
+        </p>
+        <p class="reveal reveal-delay-3 font-sans font-light text-stone/40 text-sm leading-relaxed">
+          Our students consistently rank among Bengal's top JEE performers — not because of pressure, but because of clarity.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       DIVIDER
+  ═══════════════════════════════════════════ -->
+  <div class="w-full border-t border-bark/40 max-w-7xl mx-auto px-6 md:px-12"></div>
+
+  <!-- ═══════════════════════════════════════
+       SUBJECTS
+  ═══════════════════════════════════════════ -->
+  <section class="py-28 md:py-40 px-6 md:px-12 max-w-7xl mx-auto" id="subjects">
+    <div class="mb-16 md:mb-20">
+      <p class="reveal font-sans text-xs tracking-[0.25em] uppercase text-gold/70 mb-4">Core Subjects</p>
+      <h2 class="reveal reveal-delay-1 font-serif font-bold text-stone text-3xl md:text-5xl leading-tight max-w-xl">
+        Three pillars. One destination.
+      </h2>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+
+      <!-- Physics -->
+      <article class="reveal subject-card bg-olive border border-bark/60 rounded-sm p-8 md:p-10"
+               role="button" tabindex="0" aria-expanded="false" data-card>
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <span class="font-sans text-[10px] tracking-[0.2em] uppercase text-moss mb-3 block">01</span>
+            <h3 class="font-serif font-bold text-stone text-2xl md:text-3xl">Physics</h3>
+          </div>
+          <div class="card-toggle w-8 h-8 border border-bark/70 rounded-full flex items-center justify-center text-stone/40 text-lg transition-all duration-300">
+            +
+          </div>
+        </div>
+        <p class="font-sans font-light text-stone/50 text-sm leading-relaxed mb-4">
+          From Newtonian mechanics to modern quantum theory — structured for JEE Advanced.
+        </p>
+        <div class="card-body">
+          <ul class="font-sans text-sm text-stone/50 space-y-2 pt-4 border-t border-bark/40">
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Mechanics &amp; Waves</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Electrodynamics &amp; Optics</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Modern Physics &amp; Thermodynamics</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Previous Years — Fully Solved</li>
+          </ul>
+          <a href="material/" class="inline-block mt-5 font-sans text-[10px] tracking-widest uppercase text-gold border-b border-gold/40 hover:border-gold pb-0.5 transition-colors duration-200">
+            View Materials →
+          </a>
+        </div>
+      </article>
+
+      <!-- Chemistry -->
+      <article class="reveal reveal-delay-1 subject-card bg-olive border border-bark/60 rounded-sm p-8 md:p-10"
+               role="button" tabindex="0" aria-expanded="false" data-card>
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <span class="font-sans text-[10px] tracking-[0.2em] uppercase text-moss mb-3 block">02</span>
+            <h3 class="font-serif font-bold text-stone text-2xl md:text-3xl">Chemistry</h3>
+          </div>
+          <div class="card-toggle w-8 h-8 border border-bark/70 rounded-full flex items-center justify-center text-stone/40 text-lg transition-all duration-300">
+            +
+          </div>
+        </div>
+        <p class="font-sans font-light text-stone/50 text-sm leading-relaxed mb-4">
+          Organic reactions, inorganic patterns, and physical chemistry — all logically sequenced.
+        </p>
+        <div class="card-body">
+          <ul class="font-sans text-sm text-stone/50 space-y-2 pt-4 border-t border-bark/40">
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Organic: Mechanisms &amp; Named Reactions</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Inorganic: Groups &amp; Coordination</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Physical: Equilibria &amp; Electrochemistry</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Cheat-sheets &amp; Rapid Revision</li>
+          </ul>
+          <a href="material/" class="inline-block mt-5 font-sans text-[10px] tracking-widest uppercase text-gold border-b border-gold/40 hover:border-gold pb-0.5 transition-colors duration-200">
+            View Materials →
+          </a>
+        </div>
+      </article>
+
+      <!-- Mathematics -->
+      <article class="reveal reveal-delay-2 subject-card bg-olive border border-bark/60 rounded-sm p-8 md:p-10 sm:col-span-2 lg:col-span-1"
+               role="button" tabindex="0" aria-expanded="false" data-card>
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <span class="font-sans text-[10px] tracking-[0.2em] uppercase text-moss mb-3 block">03</span>
+            <h3 class="font-serif font-bold text-stone text-2xl md:text-3xl">Mathematics</h3>
+          </div>
+          <div class="card-toggle w-8 h-8 border border-bark/70 rounded-full flex items-center justify-center text-stone/40 text-lg transition-all duration-300">
+            +
+          </div>
+        </div>
+        <p class="font-sans font-light text-stone/50 text-sm leading-relaxed mb-4">
+          From algebra and calculus to combinatorics — precision thinking, systematically taught.
+        </p>
+        <div class="card-body">
+          <ul class="font-sans text-sm text-stone/50 space-y-2 pt-4 border-t border-bark/40">
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Calculus: Differential &amp; Integral</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Algebra: Matrices &amp; Complex Numbers</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Coordinate Geometry &amp; Vectors</li>
+            <li class="flex items-center gap-3"><span class="w-1 h-1 rounded-full bg-moss flex-shrink-0"></span>Combinatorics &amp; Probability</li>
+          </ul>
+          <a href="material/" class="inline-block mt-5 font-sans text-[10px] tracking-widest uppercase text-gold border-b border-gold/40 hover:border-gold pb-0.5 transition-colors duration-200">
+            View Materials →
+          </a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       STATS BAND
+  ═══════════════════════════════════════════ -->
+  <div class="border-y border-bark/40 py-12 md:py-16 px-6 md:px-12">
+    <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x divide-bark/40">
+      <div class="reveal text-center md:px-12">
+        <p class="font-serif font-bold text-stone text-4xl md:text-5xl mb-2">98<span class="text-gold">%</span></p>
+        <p class="font-sans text-stone/40 text-xs tracking-widest uppercase">Completion Rate</p>
+      </div>
+      <div class="reveal reveal-delay-1 text-center md:px-12">
+        <p class="font-serif font-bold text-stone text-4xl md:text-5xl mb-2">1.4<span class="text-gold">k</span></p>
+        <p class="font-sans text-stone/40 text-xs tracking-widest uppercase">Active Students</p>
+      </div>
+      <div class="reveal reveal-delay-2 text-center md:px-12">
+        <p class="font-serif font-bold text-stone text-4xl md:text-5xl mb-2">320<span class="text-gold">+</span></p>
+        <p class="font-sans text-stone/40 text-xs tracking-widest uppercase">PDF Resources</p>
+      </div>
+      <div class="reveal reveal-delay-3 text-center md:px-12">
+        <p class="font-serif font-bold text-stone text-4xl md:text-5xl mb-2">7<span class="text-gold">yr</span></p>
+        <p class="font-sans text-stone/40 text-xs tracking-widest uppercase">Expert Faculty</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       CTA BAND
+  ═══════════════════════════════════════════ -->
+  <section class="py-32 md:py-52 px-6 text-center max-w-3xl mx-auto">
+    <p class="reveal font-sans text-xs tracking-[0.25em] uppercase text-gold/70 mb-6">Begin Your Journey</p>
+    <h2 class="reveal reveal-delay-1 font-serif font-bold text-stone text-3xl md:text-5xl leading-tight mb-8">
+      The forest does not rush, yet everything is accomplished.
+    </h2>
+    <p class="reveal reveal-delay-2 font-sans font-light text-stone/45 text-sm md:text-base leading-relaxed mb-12">
+      Register today and receive your curated starter pack — handpicked notes, a 30-day study roadmap, and access to our resource library.
+    </p>
+    <a href="contact/"
+       class="reveal reveal-delay-3 inline-block font-sans text-xs font-medium tracking-widest uppercase px-10 py-4 bg-gold text-forest hover:bg-stone transition-all duration-300 rounded-sm">
+      Start Your Admission
+    </a>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════ -->
+  <footer class="border-t border-bark/40 py-10 md:py-14 px-6 md:px-12">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-2">
+        <span class="block w-1.5 h-1.5 rounded-full bg-gold"></span>
+        <span class="font-serif text-stone text-base font-bold tracking-wide">EduHubBengal</span>
+      </div>
+      <nav class="flex gap-8" aria-label="Footer navigation">
+        <a href="/"          class="font-sans text-stone/35 text-xs hover:text-stone/70 transition-colors duration-200 tracking-wide">Home</a>
+        <a href="material/" class="font-sans text-stone/35 text-xs hover:text-stone/70 transition-colors duration-200 tracking-wide">Materials</a>
+        <a href="contact/"  class="font-sans text-stone/35 text-xs hover:text-stone/70 transition-colors duration-200 tracking-wide">Contact</a>
+      </nav>
+      <p class="font-sans text-stone/20 text-xs">© 2025 EduHubBengal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════
+       SCRIPTS
+  ═══════════════════════════════════════════ -->
+  <script>
+  (() => {
+    'use strict';
+
+    /* Custom cursor removed — touch optimised */
+
+    /* ── Navbar scroll class ───────────────── */
+    const navbar = document.getElementById('navbar');
+    const onScroll = () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 30);
+      // fade scroll hint
+      const hint = document.getElementById('scroll-hint');
+      if (hint) hint.style.opacity = window.scrollY > 80 ? '0' : '1';
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    /* ── Hamburger ─────────────────────────── */
+    const hamburger = document.getElementById('mobile-menu');
+    const drawer    = document.getElementById('mobile-drawer');
+    hamburger.addEventListener('click', () => {
+      const open = hamburger.classList.toggle('open');
+      hamburger.setAttribute('aria-expanded', open);
+      drawer.classList.toggle('hidden', !open);
+    });
+
+    /* ── Hero canvas scroll animation ─────── */
+    const TOTAL = 105;
+    const canvas = document.getElementById('hero-canvas');
+    const ctx    = canvas.getContext('2d');
+    const imgs   = [];
+    let loaded   = 0;
+    let curIdx   = 0, tgtIdx = 0, lastDrawn = -1;
+
+    const preloaderEl  = document.getElementById('preloader');
+    const preloaderBar = document.getElementById('preloader-bar');
+
+    function pad(n) { return String(n).padStart(3, '0'); }
+
+    function drawCover(img) {
+      const W = canvas.width, H = canvas.height;
+      const iR = img.naturalWidth / img.naturalHeight;
+      const cR = W / H;
+      let sw, sh, sx, sy;
+      if (cR > iR) { sw = W; sh = W / iR; sx = 0; sy = (H - sh) / 2; }
+      else          { sh = H; sw = H * iR; sy = 0; sx = (W - sw) / 2; }
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(img, sx, sy, sw, sh);
+    }
+
+    function resizeCanvas() {
+      canvas.width  = window.innerWidth  * (window.devicePixelRatio || 1);
+      canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
+      canvas.style.width  = window.innerWidth  + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      if (imgs[Math.round(curIdx)]) drawCover(imgs[Math.round(curIdx)]);
+    }
+
+    function onImgLoad() {
+      loaded++;
+      const pct = (loaded / TOTAL) * 100;
+      preloaderBar.style.width = pct + '%';
+      if (loaded === TOTAL) {
+        setTimeout(() => {
+          preloaderEl.style.opacity = '0';
+          preloaderEl.style.transition = 'opacity 0.6s ease';
+          setTimeout(() => preloaderEl.style.display = 'none', 650);
+        }, 300);
+        drawCover(imgs[0]);
+      }
+    }
+
+    for (let i = 1; i <= TOTAL; i++) {
+      const img = new Image();
+      img.src = './files1/ezgif-frame-' + pad(i) + '.jpg';
+      img.onload  = onImgLoad;
+      img.onerror = onImgLoad;
+      imgs.push(img);
+    }
+
+    // Scroll → map hero section scroll progress to frame index
+    const heroEl = document.getElementById('hero');
+    function onHeroScroll() {
+      const rect   = heroEl.getBoundingClientRect();
+      const total  = heroEl.offsetHeight - window.innerHeight;
+      const scrolled = Math.max(0, -rect.top);
+      const frac   = Math.min(1, scrolled / total);
+      tgtIdx = frac * (TOTAL - 1);
+    }
+    window.addEventListener('scroll', onHeroScroll, { passive: true });
+
+    // Lerp loop
+    (function loop() {
+      const diff = tgtIdx - curIdx;
+      if (Math.abs(diff) > 0.01) curIdx += diff * 0.15;
+      else curIdx = tgtIdx;
+      const frame = Math.round(curIdx);
+      if (frame !== lastDrawn && imgs[frame]) {
+        drawCover(imgs[frame]);
+        lastDrawn = frame;
+      }
+      requestAnimationFrame(loop);
+    })();
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas, { passive: true });
+
+    /* Mouse parallax removed — touch optimised */
+
+    /* ── Scroll Reveal (IntersectionObserver) ─ */
+    const revealEls = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => io.observe(el));
+
+    /* ── Card Expansion ────────────────────── */
+    document.querySelectorAll('[data-card]').forEach(card => {
+      const toggle = card.querySelector('.card-toggle');
+      function expand() {
+        const isOpen = card.classList.toggle('expanded');
+        card.setAttribute('aria-expanded', isOpen);
+        if (toggle) toggle.textContent = isOpen ? '−' : '+';
+      }
+      card.addEventListener('click', expand);
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); expand(); } });
+    });
+
+  })();
+  </script>
+
+  <style>
+    @keyframes scrollline {
+      0%   { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+  </style>
+</body>
+</html>
