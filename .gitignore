@@ -1,0 +1,13 @@
+# Node / server (not needed on GitHub Pages)
+node_modules/
+package-lock.json
+server.js
+package.json
+
+# Old Vite scaffolding (not used)
+src/
+public/
+
+# System files
+.DS_Store
+Thumbs.db
